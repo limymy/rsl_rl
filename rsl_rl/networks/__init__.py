@@ -7,4 +7,5 @@
 
 from .memory import Memory
 from .mlp import MLP
+from .cnn import CNN, CNNConfig
 from .normalization import EmpiricalDiscountedVariationNormalization, EmpiricalNormalization
