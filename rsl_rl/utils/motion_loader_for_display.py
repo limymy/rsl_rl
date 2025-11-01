@@ -24,15 +24,15 @@ import torch
 
 
 class AMPLoaderDisplay:
+    ROOT_POS_SIZE = 6
     JOINT_POS_SIZE = 12
-
+    ROOT_VEL_SIZE = 6
     JOINT_VEL_SIZE = 12
 
-    JOINT_POSE_START_IDX = 0
+    JOINT_POSE_START_IDX = ROOT_POS_SIZE
     JOINT_POSE_END_IDX = JOINT_POSE_START_IDX + JOINT_POS_SIZE
 
-    ROOT_STATES_NUM = 6
-    JOINT_VEL_START_IDX = JOINT_POSE_END_IDX
+    JOINT_VEL_START_IDX = JOINT_POSE_END_IDX + ROOT_VEL_SIZE
     JOINT_VEL_END_IDX = JOINT_VEL_START_IDX + JOINT_VEL_SIZE
 
     def __init__(
@@ -231,13 +231,19 @@ class AMPLoaderDisplay:
         Returns:
             An interpolation of the two frames.
         """
+        root_pos0 = frame0[: AMPLoaderDisplay.ROOT_POS_SIZE]
+        root_pos1 = frame1[: AMPLoaderDisplay.ROOT_POS_SIZE]
         joints0, joints1 = AMPLoaderDisplay.get_joint_pose(frame0), AMPLoaderDisplay.get_joint_pose(frame1)
+        root_vel_0 = frame0[AMPLoaderDisplay.JOINT_POSE_END_IDX : AMPLoaderDisplay.JOINT_VEL_START_IDX]
+        root_vel_1 = frame1[AMPLoaderDisplay.JOINT_POSE_END_IDX : AMPLoaderDisplay.JOINT_VEL_START_IDX]
         joint_vel_0, joint_vel_1 = AMPLoaderDisplay.get_joint_vel(frame0), AMPLoaderDisplay.get_joint_vel(frame1)
 
+        blend_root_pos = self.slerp(root_pos0, root_pos1, blend)
         blend_joint_q = self.slerp(joints0, joints1, blend)
+        blend_root_vel = self.slerp(root_vel_0, root_vel_1, blend)
         blend_joints_vel = self.slerp(joint_vel_0, joint_vel_1, blend)
 
-        return torch.cat([blend_joint_q, blend_joints_vel])
+        return torch.cat([blend_root_pos, blend_joint_q, blend_root_vel, blend_joints_vel])
 
     def feed_forward_generator(self, num_mini_batch, mini_batch_size):
         """Generates a batch of AMP transitions."""
